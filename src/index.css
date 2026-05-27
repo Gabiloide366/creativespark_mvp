@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  
+  --color-primary-color: #3f6375;
+  --color-on-primary-color: #ffffff;
+  --color-primary-container: #7da1b5;
+  --color-on-primary-container: #103848;
+  
+  --color-secondary-color: #85522c;
+  --color-on-secondary-color: #ffffff;
+  --color-secondary-container: #ffbb8c;
+  --color-on-secondary-color-container: #794823;
+  
+  --color-tertiary-color: #7c5264;
+  --color-on-tertiary-color: #ffffff;
+  --color-tertiary-container: #bf8fa2;
+  --color-on-tertiary-color-container: #4c2939;
+  
+  --color-bg-neutral: #faf9f8;
+  --color-text-charcoal: #334155;
+  
+  --color-surface-lowest: #ffffff;
+  --color-surface-low: #f4f3f2;
+  --color-surface-normal: #eeeeed;
+  --color-surface-high: #e9e8e7;
+  --color-surface-highest: #e3e2e1;
+  --color-border-outline: #c1c7cc;
+}
+
+/* Base style resets */
+body {
+  font-family: var(--font-sans);
+  background-color: #111827; /* Deep midnight-dark wrapper context to contrast with the elegant pastel mobile mockup frame */
+  color: #f3f4f6;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Custom animated organic blob layout */
+.blob-accent {
+  filter: blur(50px);
+  opacity: 0.15;
+  pointer-events: none;
+  animation: floatBlobs 20s infinite alternate ease-in-out;
+}
+
+@keyframes floatBlobs {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05) rotate(15deg); }
+  100% { transform: translateY(20px) scale(0.95) rotate(-15deg); }
+}
+
+/* Hide scrollbars for slick galleries */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

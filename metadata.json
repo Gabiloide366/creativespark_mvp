@@ -1,0 +1,6 @@
+{
+  "name": "CreativeSpark",
+  "description": "Weekly creative challenge platform with a community gallery, anonymous submissions, and personalized creative journeys.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
