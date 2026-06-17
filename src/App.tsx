@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MobileFrame from "./components/MobileFrame";
 import BlobBackground from "./components/BlobBackground";
 import ChallengeDetail from "./components/ChallengeDetail";
@@ -17,6 +17,33 @@ export default function App() {
   const [submissions, setSubmissions] = useState<Submission[]>(defaultSubmissions);
   const [artist, setArtist] = useState<Artist>(defaultArtist);
   const [selectedDetailedSubmission, setSelectedDetailedSubmission] = useState<Submission | null>(null);
+
+  useEffect(() => {
+    async function loadSavedSubmissions() {
+      try {
+        const { data, error } = await supabase
+          .from<Submission>("submissions")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Failed to load saved submissions:", error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          setSubmissions((prev) => [
+            ...data,
+            ...defaultSubmissions.filter((defaultSub) => !data.some((saved) => saved.id === defaultSub.id)),
+          ]);
+        }
+      } catch (error) {
+        console.error("Supabase load error:", error);
+      }
+    }
+
+    loadSavedSubmissions();
+  }, []);
 
   // Like interaction callback
   const handleLikeSubmission = (id: string) => {
