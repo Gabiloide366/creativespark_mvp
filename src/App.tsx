@@ -14,7 +14,18 @@ import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<"inicio" | "galeria" | "enviar" | "perfil">("inicio");
-  const [submissions, setSubmissions] = useState<Submission[]>(defaultSubmissions);
+  const [submissions, setSubmissions] = useState<Submission[]>(() => {
+    if (typeof window === "undefined") return defaultSubmissions;
+
+    try {
+      const stored = window.localStorage.getItem("creativeSparkSubmissions");
+      if (!stored) return defaultSubmissions;
+      const parsed = JSON.parse(stored) as Submission[];
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultSubmissions;
+    } catch {
+      return defaultSubmissions;
+    }
+  });
   const [artist, setArtist] = useState<Artist>(defaultArtist);
   const [selectedDetailedSubmission, setSelectedDetailedSubmission] = useState<Submission | null>(null);
 
@@ -32,10 +43,14 @@ export default function App() {
         }
 
         if (data && data.length > 0) {
-          setSubmissions((prev) => [
-            ...data,
-            ...defaultSubmissions.filter((defaultSub) => !data.some((saved) => saved.id === defaultSub.id)),
-          ]);
+          setSubmissions((prev) => {
+            const savedIds = new Set(data.map((saved) => saved.id));
+            const localOnly = prev.filter((item) => !savedIds.has(item.id));
+            const mergedDefaults = defaultSubmissions.filter(
+              (defaultSub) => !savedIds.has(defaultSub.id) && !localOnly.some((local) => local.id === defaultSub.id)
+            );
+            return [...data, ...localOnly, ...mergedDefaults];
+          });
         }
       } catch (error) {
         console.error("Supabase load error:", error);
@@ -44,6 +59,15 @@ export default function App() {
 
     loadSavedSubmissions();
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem("creativeSparkSubmissions", JSON.stringify(submissions));
+    } catch {
+      // ignore storage errors
+    }
+  }, [submissions]);
 
   // Like interaction callback
   const handleLikeSubmission = (id: string) => {
