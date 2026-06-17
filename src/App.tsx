@@ -174,9 +174,7 @@ export default function App() {
 
       const { data: insertedData, error: insertError } = await supabase
         .from('submissions')
-        .insert(dbRecord)
-        .select()
-        .single()
+        .insert([dbRecord])
 
       if (insertError) {
         console.error('Supabase insert failed:', insertError)
@@ -184,18 +182,18 @@ export default function App() {
       }
 
       const persistedSubmission: Submission = {
-        id: insertedData.id || localId,
-        title: insertedData.title,
-        challengeId: insertedData.challengeId,
-        image: insertedData.image,
-        likes: insertedData.likes,
-        comments: insertedData.comments,
-        shares: insertedData.shares,
-        date: insertedData.date,
-        isAnonymous: insertedData.isAnonymous,
-        isFeatured: insertedData.isFeatured,
-        category: insertedData.category,
-        story: insertedData.story,
+        id: dbRecord.id,
+        title: dbRecord.title,
+        challengeId: dbRecord.challengeId,
+        image: dbRecord.image,
+        likes: dbRecord.likes,
+        comments: dbRecord.comments,
+        shares: dbRecord.shares,
+        date: dbRecord.date,
+        isAnonymous: dbRecord.isAnonymous,
+        isFeatured: dbRecord.isFeatured,
+        category: dbRecord.category,
+        story: dbRecord.story,
         ...(isAnon ? {} : {
           artistName: artist.name,
           artistHandle: artist.handle,
