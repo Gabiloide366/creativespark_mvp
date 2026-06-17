@@ -9,6 +9,7 @@ import SubmissionDetailModal from "./components/SubmissionDetailModal";
 import { defaultSubmissions, defaultArtist } from "./data";
 import { Submission, Artist } from "./types";
 import { Home as HomeIcon, Palette, PlusCircle, User } from "lucide-react";
+import { supabase } from './lib/supabase'
 import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
@@ -58,20 +59,20 @@ export default function App() {
     }));
   };
 
-  // Upload Submission handler
-  const handleUploadSubmission = (
+  // Upload Submission handler — now attempts to persist to Supabase storage and table
+  const handleUploadSubmission = async (
     title: string,
     story: string,
     isAnon: boolean,
     image: string,
     category: string
   ) => {
-    const newSubmission: Submission = {
-      id: `sub_custom_${Date.now()}`,
+    const localId = `sub_custom_${Date.now()}`
+    const newSubmissionBase: Omit<Submission, 'id'> = {
       title,
-      challengeId: "chal_botanicos", // Always link to botanic challenges in this weekly prototype
+      challengeId: "chal_botanicos",
       image,
-      likes: Math.floor(Math.random() * 20) + 1, // Start with some organic hearts!
+      likes: Math.floor(Math.random() * 20) + 1,
       comments: 0,
       shares: 0,
       date: new Date().toISOString().split("T")[0],
@@ -79,7 +80,67 @@ export default function App() {
       isFeatured: false,
       category,
       story,
-      // If not anonymous, append Alex's artist markers
+    }
+
+    // Try to upload the image to Supabase Storage and insert a record in the 'submissions' table.
+    try {
+      // Convert data URL (base64) to Blob
+      const blob = await (await fetch(image)).blob();
+      const mime = blob.type || 'image/png'
+      const ext = mime.split('/')[1] || 'png'
+      const fileName = `sub_${Date.now()}.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('submissions')
+        .upload(fileName, blob, { cacheControl: '3600', upsert: false })
+
+      if (uploadError) throw uploadError
+
+      const { data: publicData } = supabase.storage.from('submissions').getPublicUrl(fileName)
+      const imageUrl = (publicData && (publicData as any).publicUrl) || image
+
+      // Prepare record for DB insert. If your table uses different column names, adjust accordingly.
+      const dbRecord = {
+        id: localId,
+        title,
+        challengeId: 'chal_botanicos',
+        image: imageUrl,
+        likes: newSubmissionBase.likes,
+        comments: 0,
+        shares: 0,
+        date: newSubmissionBase.date,
+        isAnonymous: isAnon,
+        isFeatured: false,
+        category,
+        story,
+      }
+
+      const { error: insertError } = await supabase.from('submissions').insert(dbRecord)
+      if (insertError) throw insertError
+
+      // On success, use the persisted image URL
+      const persistedSubmission: Submission = {
+        id: localId,
+        ...(newSubmissionBase as Submission),
+        image: imageUrl,
+        ...(isAnon ? {} : {
+          artistName: artist.name,
+          artistHandle: artist.handle,
+          artistAvatar: artist.avatar
+        })
+      }
+
+      setSubmissions((prev) => [persistedSubmission, ...prev])
+      setActiveTab(isAnon ? 'galeria' : 'perfil')
+      return
+    } catch (err) {
+      console.error('Supabase persist failed, falling back to local:', err)
+    }
+
+    // Fallback: keep previous local behavior when Supabase fails or isn't configured
+    const newSubmission: Submission = {
+      id: localId,
+      ...(newSubmissionBase as Submission),
       ...(isAnon ? {} : {
         artistName: artist.name,
         artistHandle: artist.handle,
