@@ -135,24 +135,29 @@ export default function App() {
 
     // Try to upload the image to Supabase Storage and insert a record in the 'submissions' table.
     try {
+      console.log('🚀 Starting upload...', { title, isAnon, category })
+      
       // Convert data URL (base64) to Blob
       const blob = await (await fetch(image)).blob();
       const mime = blob.type || 'image/png'
       const ext = mime.split('/')[1] || 'png'
       const fileName = `sub_${Date.now()}.${ext}`
 
+      console.log('📤 Uploading file to storage:', fileName)
       const { error: uploadError } = await supabase.storage
         .from('submissions')
         .upload(fileName, blob, { cacheControl: '3600', upsert: false })
 
       if (uploadError) {
-        console.error('Supabase storage upload failed:', uploadError)
+        console.error('❌ Storage upload failed:', uploadError)
         throw uploadError
       }
+      
+      console.log('✅ File uploaded to storage')
 
       const { data: publicData, error: urlError } = supabase.storage.from('submissions').getPublicUrl(fileName)
       if (urlError) {
-        console.error('Supabase getPublicUrl failed:', urlError)
+        console.error('❌ getPublicUrl failed:', urlError)
       }
       const imageUrl = (publicData && (publicData as any).publicUrl) || image
 
@@ -172,14 +177,17 @@ export default function App() {
         story,
       }
 
+      console.log('💾 Inserting record to DB:', dbRecord)
       const { data: insertedData, error: insertError } = await supabase
         .from('submissions')
         .insert([dbRecord])
 
       if (insertError) {
-        console.error('Supabase insert failed:', insertError)
+        console.error('❌ Insert failed:', insertError)
         throw insertError
       }
+      
+      console.log('✅ Record inserted successfully')
 
       const persistedSubmission: Submission = {
         id: dbRecord.id,
@@ -205,7 +213,7 @@ export default function App() {
       setActiveTab(isAnon ? 'galeria' : 'perfil')
       return
     } catch (err) {
-      console.error('Supabase persist failed, falling back to local:', err)
+      console.error('❌ Supabase persist failed, falling back to local:', err)
     }
 
     // Fallback: keep previous local behavior when Supabase fails or isn't configured
