@@ -145,9 +145,15 @@ export default function App() {
         .from('submissions')
         .upload(fileName, blob, { cacheControl: '3600', upsert: false })
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Supabase storage upload failed:', uploadError)
+        throw uploadError
+      }
 
-      const { data: publicData } = supabase.storage.from('submissions').getPublicUrl(fileName)
+      const { data: publicData, error: urlError } = supabase.storage.from('submissions').getPublicUrl(fileName)
+      if (urlError) {
+        console.error('Supabase getPublicUrl failed:', urlError)
+      }
       const imageUrl = (publicData && (publicData as any).publicUrl) || image
 
       // Prepare record for DB insert. If your table uses different column names, adjust accordingly.
@@ -166,14 +172,30 @@ export default function App() {
         story,
       }
 
-      const { error: insertError } = await supabase.from('submissions').insert(dbRecord)
-      if (insertError) throw insertError
+      const { data: insertedData, error: insertError } = await supabase
+        .from('submissions')
+        .insert(dbRecord)
+        .select()
+        .single()
 
-      // On success, use the persisted image URL
+      if (insertError) {
+        console.error('Supabase insert failed:', insertError)
+        throw insertError
+      }
+
       const persistedSubmission: Submission = {
-        id: localId,
-        ...(newSubmissionBase as Submission),
-        image: imageUrl,
+        id: insertedData.id || localId,
+        title: insertedData.title,
+        challengeId: insertedData.challengeId,
+        image: insertedData.image,
+        likes: insertedData.likes,
+        comments: insertedData.comments,
+        shares: insertedData.shares,
+        date: insertedData.date,
+        isAnonymous: insertedData.isAnonymous,
+        isFeatured: insertedData.isFeatured,
+        category: insertedData.category,
+        story: insertedData.story,
         ...(isAnon ? {} : {
           artistName: artist.name,
           artistHandle: artist.handle,
