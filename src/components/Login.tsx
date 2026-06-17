@@ -12,19 +12,24 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [password, setPassword] = useState('')
   const [isRegistering, setIsRegistering] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setLoading(true)
+    setMessage(null)
 
     if (isRegistering) {
-      const { error } = await supabase.auth.signUp({ email, password })
+      const { error } = await supabase.auth.signUp(
+        { email, password },
+        { emailRedirectTo: `${window.location.origin}` }
+      )
       setLoading(false)
       if (error) {
-        alert(error.message)
+        setMessage(error.message)
         return
       }
-      alert('Verifique seu e-mail para confirmar o cadastro.')
+      setMessage('Verifique seu e-mail para confirmar o cadastro. O link será enviado para a mesma URL atual.')
       setIsRegistering(false)
       return
     }
@@ -33,7 +38,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setLoading(false)
 
     if (error) {
-      alert(error.message)
+      setMessage(error.message)
       return
     }
 
@@ -41,14 +46,19 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360}}>
+    <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360, width: '100%'}}>
+      {message && (
+        <div style={{background: '#f8fafc', color: '#1f2937', border: '1px solid #d1d5db', borderRadius: 10, padding: 12}}>
+          {message}
+        </div>
+      )}
       <input
         type="email"
         placeholder="E-mail"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        style={{padding: 8, borderRadius: 6, border: '1px solid #ddd'}}
+        style={{padding: 8, borderRadius: 6, border: '1px solid #ddd', background: '#f9fafb', color: '#111827'}}
       />
 
       <input
@@ -57,7 +67,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
-        style={{padding: 8, borderRadius: 6, border: '1px solid #ddd'}}
+        style={{padding: 8, borderRadius: 6, border: '1px solid #ddd', background: '#f9fafb', color: '#111827'}}
       />
 
       <button type="submit" disabled={loading} style={{padding: 10, borderRadius: 6, background: '#111827', color: '#fff', border: 'none'}}>

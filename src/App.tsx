@@ -17,6 +17,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"inicio" | "galeria" | "enviar" | "perfil">("inicio");
   const [authenticated, setAuthenticated] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>(() => {
     if (typeof window === "undefined") return defaultSubmissions;
 
@@ -34,6 +35,18 @@ export default function App() {
 
   useEffect(() => {
     async function restoreSession() {
+      if (typeof window !== 'undefined' && window.location.hash) {
+        const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+        if (error) {
+          console.error('Supabase auth redirect error:', error);
+          setAuthError(error.message);
+        }
+        if (data?.session) {
+          setAuthenticated(true);
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
       const {
         data: { session },
         error,
@@ -272,8 +285,13 @@ export default function App() {
   if (!authenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#111827] text-white px-4">
-        <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl">
+        <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl relative z-10 border border-slate-200">
           <h1 className="text-2xl font-bold text-slate-900 mb-4">Entrar no Creative Spark</h1>
+          {authError && (
+            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {authError}
+            </div>
+          )}
           <Login onLoginSuccess={() => setAuthenticated(true)} />
         </div>
       </div>
