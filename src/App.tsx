@@ -6,6 +6,7 @@ import GalleryView from "./components/GalleryView";
 import UploadForm from "./components/UploadForm";
 import ProfileView from "./components/ProfileView";
 import SubmissionDetailModal from "./components/SubmissionDetailModal";
+import Login from "./components/Login";
 import { defaultSubmissions, defaultArtist } from "./data";
 import { Submission, Artist } from "./types";
 import { Home as HomeIcon, Palette, PlusCircle, User } from "lucide-react";
@@ -14,6 +15,8 @@ import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<"inicio" | "galeria" | "enviar" | "perfil">("inicio");
+  const [authenticated, setAuthenticated] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);
   const [submissions, setSubmissions] = useState<Submission[]>(() => {
     if (typeof window === "undefined") return defaultSubmissions;
 
@@ -28,6 +31,24 @@ export default function App() {
   });
   const [artist, setArtist] = useState<Artist>(defaultArtist);
   const [selectedDetailedSubmission, setSelectedDetailedSubmission] = useState<Submission | null>(null);
+
+  useEffect(() => {
+    async function restoreSession() {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error("Failed to restore Supabase session:", error);
+      }
+
+      setAuthenticated(!!session?.user);
+      setLoadingAuth(false);
+    }
+
+    restoreSession();
+  }, []);
 
   useEffect(() => {
     async function loadSavedSubmissions() {
@@ -57,8 +78,10 @@ export default function App() {
       }
     }
 
-    loadSavedSubmissions();
-  }, []);
+    if (authenticated) {
+      loadSavedSubmissions();
+    }
+  }, [authenticated]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -234,6 +257,28 @@ export default function App() {
   const handleOpenDetail = (sub: Submission) => {
     setSelectedDetailedSubmission(sub);
   };
+
+  if (loadingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#111827] text-white">
+        <div className="text-center">
+          <div className="mb-3 animate-pulse">Carregando autenticação...</div>
+          <div className="w-10 h-10 rounded-full border-4 border-white/20 border-t-white animate-spin mx-auto" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#111827] text-white px-4">
+        <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl">
+          <h1 className="text-2xl font-bold text-slate-900 mb-4">Entrar no Creative Spark</h1>
+          <Login onLoginSuccess={() => setAuthenticated(true)} />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen relative font-sans text-slate-800 flex items-center justify-center bg-radial-[circle_at_center,#1e293b_0%,#0f172a_100%]">

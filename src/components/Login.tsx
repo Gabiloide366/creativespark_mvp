@@ -3,7 +3,11 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 
-export default function Login() {
+interface LoginProps {
+  onLoginSuccess: () => void;
+}
+
+export default function Login({ onLoginSuccess }: LoginProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isRegistering, setIsRegistering] = useState(false)
@@ -33,7 +37,7 @@ export default function Login() {
       return
     }
 
-    window.location.href = '/dashboard'
+    onLoginSuccess()
   }
 
   return (
